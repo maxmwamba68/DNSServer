@@ -32,20 +32,20 @@ def generate_aes_key(password, salt):
 
 # Lookup details on fernet in the cryptography.io documentation    
 def encrypt_with_aes(input_string, password, salt):
-    key = generate_aes_key(????)
-    f = Fernet(???)
-    encrypted_data = f.????(????.encode('utf-8')) #call the Fernet encrypt method
+    key = generate_aes_key(password, salt)
+    f = Fernet(key)
+    encrypted_data = f.encrypt(input_string.encode('utf-8')) #call the Fernet encrypt method
     return encrypted_data    
 
 def decrypt_with_aes(encrypted_data, password, salt):
-    key = generate_aes_key(????)
-    f = Fernet(????)
-    decrypted_data = f.????(????) #call the Fernet decrypt method
+    key = generate_aes_key(password, salt)
+    f = Fernet(key)
+    decrypted_data = f.decrypt(encrypted_data) #call the Fernet decrypt method
     return decrypted_data.decode('utf-8')
 
-salt = ???? # Remember it should be a byte-object
-password = ?????
-input_string = ?????
+salt = b'Tandon' # Remember it should be a byte-object (prefix with 'b')
+password = "mnm9803@nyu.edu"
+input_string = "AlwaysWatching"
 
 encrypted_value = encrypt_with_aes(input_string, password, salt) # exfil function
 decrypted_value = decrypt_with_aes(encrypted_value, password, salt)  # exfil function
@@ -74,27 +74,107 @@ dns_records = {
             604800, #expire
             86400, #minimum
         ),
+     },
+    'safebank.com.': {
+        dns.rdatatype.A: '192.168.1.102',
+        dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0370:1111', # Example IPv6 Address
+        dns.rdatatype.MX: [(10, 'mail.safebank.com.')], # Preference 10 and 20
+        dns.rdatatype.NS: 'ns1.safebank.com.',
+        dns.rdatatype.TXT: ('v=spf1 include:_spf.safebank.com ~all',), # Example SPF/TXT records
+        dns.rdatatype.SOA: (
+            'ns1.example.com.', #mname
+            'admin.example.com.', #rname
+            2023081401, #serial
+            3600, #refresh
+            1800, #retry
+            604800, #expire
+            86400, #minimum
+        ),
     },
-   
-    # Add more records as needed (see assignment instructions!
+    'google.com.': {
+        dns.rdatatype.A: '192.168.1.103',
+        dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', # Example IPv6 Address
+        dns.rdatatype.MX: [(10, 'mail.google.com.')], # Preference 10 and 20
+        dns.rdatatype.NS: 'ns1.google.com.',
+        dns.rdatatype.TXT: ('v=spf1 include:_spf.google.com ~all',), # Example SPF/TXT records
+        dns.rdatatype.SOA: (
+            'ns1.google.com.', #mname
+            'admin.google.com.', #rname
+            2023081401, #serial
+            3600, #refresh
+            1800, #retry
+            604800, #expire
+            86400, #minimum
+        ),
+    },
+    'legitsite.com.': {
+        dns.rdatatype.A: '192.168.1.104',
+        dns.rdatatype.AAAA: '2001:0db8:0000:0000:0000:0000:0000:0104', # Example IPv6 Address
+        dns.rdatatype.MX: [(10, 'mail.legitsite.com.')], # Preference 10 and 20
+        dns.rdatatype.NS: 'ns1.legitsite.com.',
+        dns.rdatatype.TXT: ('v=spf1 include:_spf.google.com ~all',), # Example SPF/TXT records
+        dns.rdatatype.SOA: (
+            'ns1.legitsite.com.', #mname
+            'admin.legitsite.com.', #rname
+            2023081401, #serial
+            3600, #refresh
+            1800, #retry
+            604800, #expire
+            86400, #minimum
+        ),
+    },
+    'yahoo.com.': {
+        dns.rdatatype.A: '192.168.1.105',
+        dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0370:7334', # Example IPv6 Address
+        dns.rdatatype.MX: [(10, 'mail.yahoo.com.')], # Preference 10 and 20
+        dns.rdatatype.NS: 'ns1.yahoo.com.',
+        dns.rdatatype.TXT: ('v=spf1 ip4:192.168.1.105 -all',), # Example SPF/TXT records
+        dns.rdatatype.SOA: (
+            'ns1.yahoo.com.', #mname
+            'admin.yahoo.com.', #rname
+            2023081401, #serial
+            3600, #refresh
+            1800, #retry
+            604800, #expire
+            86400, #minimum
+        ),
+    },
+    'nyu.edu.': {
+        dns.rdatatype.A: '192.168.1.106',
+        dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0373:7312', # Example IPv6 Address
+        dns.rdatatype.MX: [(10, 'mxa-00256a01.gslb.pphosted.com.')], # Preference 10 and 20
+        dns.rdatatype.NS: 'ns1.nyu.edu.',
+        dns.rdatatype.TXT: ('v=spf1 ip4:192.168.1.105 -all',), # Example SPF/TXT records
+        dns.rdatatype.SOA: (
+            'ns1.nyu.edu.', #mname
+            'admin.nyu.edu.', #rname
+            2023081401, #serial
+            3600, #refresh
+            1800, #retry
+            604800, #expire
+            86400, #minimum
+        ),
+    },
+
+# Add more records as needed (see assignment instructions!
 }
 
 def run_dns_server():
-    # Create a UDP socket and bind it to the local IP address (what unique IP address is used here, similar to webserver lab) and port (the standard port for DNS)
-    server_socket = socket.socket(socket.AF_INET, ????) # Research this
-    server_socket.bind((?????, ????))
+    # Create a UDP socket (SOCK_DGRAM) and bind it to the local IP address and port 53 (the standard port for DNS)
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
+    server_socket.bind(('127.0.0.1', 53)) # Use 127.0.0.1 for local host
 
     while True:
         try:
             # Wait for incoming DNS requests
             data, addr = server_socket.recvfrom(1024)
             # Parse the request using the `dns.message.from_wire` method
-            request = ?????
+            request = dns.message.from_wire(data)
             # Create a response message using the `dns.message.make_response` method
-            response = ??????
+            response = dns.message.make_response(request)
 
-            # Get the question from the request
-            question = request.question[???]
+            # Get the question from the request (usually the 0th index)
+            question = request.question[0]
             qname = question.name.to_text()
             qtype = question.rdtype
 
@@ -105,12 +185,13 @@ def run_dns_server():
 
                 rdata_list = []
 
-                if qtype == dns.rdatatype.??:
+                if qtype == dns.rdatatype.MX:
                     for pref, server in answer_data:
                         rdata_list.append(MX(dns.rdataclass.IN, dns.rdatatype.MX, pref, server))
-                elif qtype == dns.rdatatype.??:
-                    ??, ??, ??, ??, ??, ??, ?? = answer_data # What is the record format? See dns_records dictionary. Assume we handle @, Class, TTL elsewhere. Do some research on SOA Records
-                    rdata = SOA(dns.rdataclass.IN, dns.rdatatype.SOA, ??, ??, ??, ??, ??, ??, ??) # follow format from previous line
+                elif qtype == dns.rdatatype.SOA:
+                    # Unpacking the 7 fields from the SOA record tuple defined in the dictionary above
+                    mname, rname, serial, refresh, retry, expire, minimum = answer_data 
+                    rdata = SOA(dns.rdataclass.IN, dns.rdatatype.SOA, mname, rname, serial, refresh, retry, expire, minimum) 
                     rdata_list.append(rdata)
                 else:
                     if isinstance(answer_data, str):
@@ -126,7 +207,7 @@ def run_dns_server():
 
             # Send the response back to the client using the `server_socket.sendto` method and put the response to_wire(), return to the addr you received from
             print("Responding to request:", qname)
-            server_socket.??????? 
+            server_socket.sendto(response.to_wire(), addr) 
         except KeyboardInterrupt:
             print('\nExiting...')
             server_socket.close()
@@ -151,6 +232,7 @@ def run_dns_server_user():
 
 
 if __name__ == '__main__':
+    # Uncomment these if you want to test the AES functions at startup
+    # print("Encrypted Value:", encrypted_value)
+    # print("Decrypted Value:", decrypted_value)
     run_dns_server_user()
-    #print("Encrypted Value:", encrypted_value)
-    #print("Decrypted Value:", decrypted_value)
