@@ -40,6 +40,15 @@ def encrypt_with_aes(input_string, password, salt):
 def decrypt_with_aes(encrypted_data, password, salt):
     key = generate_aes_key(password, salt)
     f = Fernet(key)
+    
+    # --- SAFEGUARD ADDED HERE ---
+    # Strip double/single quotes that dnspython might add to TXT records during testing
+    if isinstance(encrypted_data, str):
+        encrypted_data = encrypted_data.strip('"\'')
+    elif isinstance(encrypted_data, bytes):
+        encrypted_data = encrypted_data.strip(b'"\'')
+    # ----------------------------
+    
     decrypted_data = f.decrypt(encrypted_data) #call the Fernet decrypt method
     return decrypted_data.decode('utf-8')
 
@@ -61,7 +70,7 @@ dns_records = {
     'example.com.': {
         dns.rdatatype.A: '192.168.1.101',
         dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-        dns.rdatatype.MX: [(10, 'mail.example.com.')],  # List of (preference, mail server) tuples
+        dns.rdatatype.MX:[(10, 'mail.example.com.')],  # List of (preference, mail server) tuples
         dns.rdatatype.CNAME: 'www.example.com.',
         dns.rdatatype.NS: 'ns.example.com.',
         dns.rdatatype.TXT: ('This is a TXT record',),
@@ -110,7 +119,7 @@ dns_records = {
     'legitsite.com.': {
         dns.rdatatype.A: '192.168.1.104',
         dns.rdatatype.AAAA: '2001:0db8:0000:0000:0000:0000:0000:0104', # Example IPv6 Address
-        dns.rdatatype.MX: [(10, 'mail.legitsite.com.')], # Preference 10 and 20
+        dns.rdatatype.MX:[(10, 'mail.legitsite.com.')], # Preference 10 and 20
         dns.rdatatype.NS: 'ns1.legitsite.com.',
         dns.rdatatype.TXT: ('v=spf1 include:_spf.google.com ~all',), # Example SPF/TXT records
         dns.rdatatype.SOA: (
@@ -142,9 +151,13 @@ dns_records = {
     'nyu.edu.': {
         dns.rdatatype.A: '192.168.1.106',
         dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0373:7312', # Example IPv6 Address
-        dns.rdatatype.MX: [(10, 'mxa-00256a01.gslb.pphosted.com.')], # Preference 10 and 20
+        dns.rdatatype.MX:[(10, 'mxa-00256a01.gslb.pphosted.com.')], # Preference 10 and 20
         dns.rdatatype.NS: 'ns1.nyu.edu.',
-        dns.rdatatype.TXT: (encrypted_value.decode('utf-8'),), # Example SPF/TXT records 
+        
+        # --- TOKEN STORED HERE ---
+        # Replaced the old SPF record with the encrypted token so the tester can retrieve it
+        dns.rdatatype.TXT: (encrypted_value.decode('utf-8'),), 
+        
         dns.rdatatype.SOA: (
             'ns1.nyu.edu.', #mname
             'admin.nyu.edu.', #rname
@@ -183,7 +196,7 @@ def run_dns_server():
                 # Retrieve the data for the record and create an appropriate `rdata` object for it
                 answer_data = dns_records[qname][qtype]
 
-                rdata_list = []
+                rdata_list =[]
 
                 if qtype == dns.rdatatype.MX:
                     for pref, server in answer_data:
@@ -195,9 +208,9 @@ def run_dns_server():
                     rdata_list.append(rdata)
                 else:
                     if isinstance(answer_data, str):
-                        rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, answer_data)]
+                        rdata_list =[dns.rdata.from_text(dns.rdataclass.IN, qtype, answer_data)]
                     else:
-                        rdata_list = [dns.rdata.from_text(dns.rdataclass.IN, qtype, data) for data in answer_data]
+                        rdata_list =[dns.rdata.from_text(dns.rdataclass.IN, qtype, data) for data in answer_data]
                 for rdata in rdata_list:
                     response.answer.append(dns.rrset.RRset(question.name, dns.rdataclass.IN, qtype))
                     response.answer[-1].add(rdata)
