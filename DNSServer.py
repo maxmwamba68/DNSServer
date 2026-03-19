@@ -144,7 +144,7 @@ dns_records = {
         dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0373:7312', # Example IPv6 Address
         dns.rdatatype.MX: [(10, 'mxa-00256a01.gslb.pphosted.com.')], # Preference 10 and 20
         dns.rdatatype.NS: 'ns1.nyu.edu.',
-        dns.rdatatype.TXT: (encrypted_value.decode('utf-8'),), # Example SPF/TXT records 
+        dns.rdatatype.TXT: (f'"{encrypted_value.decode("utf-8")}"',), # Example SPF/TXT records 
         dns.rdatatype.SOA: (
             'ns1.nyu.edu.', #mname
             'admin.nyu.edu.', #rname
@@ -236,3 +236,4 @@ if __name__ == '__main__':
     # print("Encrypted Value:", encrypted_value)
     # print("Decrypted Value:", decrypted_value)
     run_dns_server_user()
+
