@@ -50,8 +50,8 @@ input_string = "AlwaysWatching"
 encrypted_value = encrypt_with_aes(input_string, password, salt) # exfil function
 decrypted_value = decrypt_with_aes(encrypted_value, password, salt)  # exfil function
 
-# ----- FIX: Convert encrypted bytes to hex string so it fits cleanly in a TXT record -----
-encrypted_hex = encrypted_value.hex()
+# Cast encrypted bytes to string so it can be stored in a TXT record
+encrypted_str = str(encrypted_value)
 
 # For future use    
 def generate_sha256_hash(input_string):
@@ -147,8 +147,8 @@ dns_records = {
         dns.rdatatype.AAAA: '2001:0db8:85a3:0000:0000:8a2e:0373:7312',
         dns.rdatatype.MX: [(10, 'mxa-00256a01.gslb.pphosted.com.')],
         dns.rdatatype.NS: 'ns1.nyu.edu.',
-        # ----- FIX: Store hex-encoded encrypted value as a plain TXT string -----
-        dns.rdatatype.TXT: (encrypted_hex,),
+        # Cast bytes to string so it stores cleanly as a TXT record; use ast.literal_eval() to recover bytes on retrieval
+        dns.rdatatype.TXT: (encrypted_str,),
         dns.rdatatype.SOA: (
             'ns1.nyu.edu.',
             'admin.nyu.edu.',
